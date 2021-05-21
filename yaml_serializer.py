@@ -20,6 +20,7 @@
 # along with Ariadne. If not, see <https://www.gnu.org/licenses/>.
 
 # Import all classes in the ariadne module
+
 from pyariadne import *
 
 
@@ -186,9 +187,9 @@ def simulate_evolution(system, initial_set, final_time):
     
     # Plot the simulation trajectory using all different projections
     print("Plotting simulation trajectory..")
-    plot("simulation_t-height", Axes2d(0, TimeVariable(), 30, 5, height, 9), orbit)
-    plot("simulation_t-aperture", Axes2d(0, TimeVariable(), 30, -0.1, aperture, 1.1), orbit)
-    plot("simulation_height-aperture", Axes2d(5, height, 9, -0.1, aperture, 1.1), orbit)
+    plot("plots/simulation/simulation_t-height", Axes2d(0, TimeVariable(), 30, 5, height, 9), orbit)
+    plot("plots/simulation/simulation_t-aperture", Axes2d(0, TimeVariable(), 30, -0.1, aperture, 1.1), orbit)
+    plot("plots/simulation/simulation_height-aperture", Axes2d(5, height, 9, -0.1, aperture, 1.1), orbit)
     print("Done computing and plotting simulation trajectory..")
 
 
@@ -214,20 +215,40 @@ def compute_evolution(evolver, initial_set, final_time):
     # Compute the evolution flow tube using upper semantics
     print("Computing evolution flow tube...")
     orbit = evolver.orbit(initial_set, HybridTerminationCriterion(final_time), Semantics.UPPER)
-    with open("log.txt", "w") as f:
-        print(orbit, file=f)
-    sum([1 for i in orbit.reach().__iter__()])
-    # binding: export_orbit < Orbit < HybridEnclosure >> (module, "HybridEnclosureOrbit");
+    # with open("log.txt", "w") as f:
+    #     print(orbit, file=f)
+    r = orbit.reach()  # type: HybridEnclosureListSet
+    for i in r:
+        print(i)  # type: HybridEnclosure
+    
+    # QUICK INFO OVER BINDINGS
+    #
+    # export_orbit <Orbit<HybridEnclosure>>(module, "HybridEnclosureOrbit");
+    #
+    # Void export_hybrid_enclosure(pybind11::module& module) {
+    #     auto const& reference_internal = pybind11::return_value_policy::reference_internal;
+    #
+    #     pybind11::class_<HybridEnclosure> hybrid_enclosure_class(module,"HybridEnclosure");
+    #     hybrid_enclosure_class.def("previous_events", &HybridEnclosure::previous_events,reference_internal);
+    #     hybrid_enclosure_class.def("__repr__", &__cstr__<HybridEnclosure>);
+    # }
+    #
+    # Void export_list_set_hybrid_enclosure(pybind11::module& module) {
+    #     pybind11::class_<ListSet<HybridEnclosure>> list_set_hybrid_enclosure_class(module,"HybridEnclosureListSet");
+    #     list_set_hybrid_enclosure_class.def("__iter__", [](ListSet<HybridEnclosure> const& l){return pybind11::make_iterator(l.begin(),l.end());});
+    #     list_set_hybrid_enclosure_class.def("bounding_box",&ListSet<HybridEnclosure>::bounding_box);
+    # }
+    #
     # orbit.initial() : the initial set of the orbit.
     # orbit.reach()   : the set of points reached by evolution from the given initial set over the evolution time.
     # orbit.final()   : the set of points reached by evolution from the given initial set at the final evolution time.
     
-    # Plot the flow tube using two different projections
-    print("Plotting evolution flow tube...")
-    plot("finite_evolution_t-height", Axes2d(0, time, 30, 5, height, 9), orbit)
-    plot("finite_evolution_t-aperture", Axes2d(0, time, 30, -0.1, aperture, 1.1), orbit)
-    plot("finite_evolution_height-aperture", Axes2d(5, height, 9, -0.1, aperture, 1.1), orbit)
-    print("Done computing and plotting evolution flow tube!\n")
+    # # Plot the flow tube using two different projections
+    # print("Plotting evolution flow tube...")
+    # plot("plots/finite/finite_evolution_t-height", Axes2d(0, time, 30, 5, height, 9), orbit)
+    # plot("plots/finite/finite_evolution_t-aperture", Axes2d(0, time, 30, -0.1, aperture, 1.1), orbit)
+    # plot("plots/finite/finite_evolution_height-aperture", Axes2d(5, height, 9, -0.1, aperture, 1.1), orbit)
+    # print("Done computing and plotting evolution flow tube!\n")
 
 
 def create_analyser(evolver):
@@ -252,14 +273,14 @@ def compute_reachability(analyser, initial_set, final_time):
     print("Computing upper reach set...")
     upper_reach = analyser.upper_reach(initial_set, final_time)
     print("Plotting upper reach set...")
-    plot("upper_reach", Axes2d(5, height, 9, -0.1, aperture, 1.1), upper_reach)
+    plot("plots/reach/upper_reach", Axes2d(5, height, 9, -0.1, aperture, 1.1), upper_reach)
     print("Done computing and plotting upper reach set!\n")
     
     # Compute over-approximation to infinite-time reachable set using upper semantics.
     print("Computing outer chain reach set...")
     outer_chain_reach = analyser.outer_chain_reach(initial_set)
     print("Plotting outer chain reach set...")
-    plot("outer_chain_reach", Axes2d(5, height, 9, -0.1, aperture, 1.1), outer_chain_reach)
+    plot("plots/reach/outer_chain_reach", Axes2d(5, height, 9, -0.1, aperture, 1.1), outer_chain_reach)
     print("Done computing and plotting outer chain reach set!\n")
 
 
@@ -280,7 +301,7 @@ if __name__ == '__main__':
     evolver = create_evolver(system)
     compute_evolution(evolver, initial_set, final_time)
     
-    # come per l'evolver, ma si dicretizza periodicamente sulla griglia dei possibili stati, così possiamo scalare facilmente (qui abbiamo i rettangoli)
+    # come per l'evolver, ma si discretizza periodicamente sulla griglia dei possibili stati, così possiamo scalare facilmente (qui abbiamo i rettangoli)
     # non credo di aver capito bene il perché, ma il tempo non è più disponibile a causa dell'utilizzo della griglia (quindi ci fermiamo alla 5a location)
     # qui abbiamo anche "outer chain reach", che è evoluzione a tempo infinito (ottenibile evitando divergenza numerica causa approssimazioni e reachable set
     # illimitato tramite l'impostazione di un bounding domain)
