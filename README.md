@@ -1,1 +1,1 @@
-# ariadne_plotting
+# Ariadne Python Plotter
