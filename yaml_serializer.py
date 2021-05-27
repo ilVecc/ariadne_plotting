@@ -1,26 +1,5 @@
 #!/usr/bin/python3
 
-##############################################################################
-#            hybrid_evolution_tutorial.py
-#
-#  Copyright  2020-21  Luca Geretti, Pieter Collins
-##############################################################################
-
-# Ariadne is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# Ariadne is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with Ariadne. If not, see <https://www.gnu.org/licenses/>.
-
-# Import all classes in the ariadne module
-
 from pyariadne import *
 
 
@@ -218,27 +197,8 @@ def compute_evolution(evolver, initial_set, final_time):
     # with open("log.txt", "w") as f:
     #     print(orbit, file=f)
     r = orbit.reach()  # type: HybridEnclosureListSet
-    for i in r:
-        print(i)  # type: HybridEnclosure
+    return r
     
-    # QUICK INFO OVER BINDINGS
-    #
-    # export_orbit <Orbit<HybridEnclosure>>(module, "HybridEnclosureOrbit");
-    #
-    # Void export_hybrid_enclosure(pybind11::module& module) {
-    #     auto const& reference_internal = pybind11::return_value_policy::reference_internal;
-    #
-    #     pybind11::class_<HybridEnclosure> hybrid_enclosure_class(module,"HybridEnclosure");
-    #     hybrid_enclosure_class.def("previous_events", &HybridEnclosure::previous_events,reference_internal);
-    #     hybrid_enclosure_class.def("__repr__", &__cstr__<HybridEnclosure>);
-    # }
-    #
-    # Void export_list_set_hybrid_enclosure(pybind11::module& module) {
-    #     pybind11::class_<ListSet<HybridEnclosure>> list_set_hybrid_enclosure_class(module,"HybridEnclosureListSet");
-    #     list_set_hybrid_enclosure_class.def("__iter__", [](ListSet<HybridEnclosure> const& l){return pybind11::make_iterator(l.begin(),l.end());});
-    #     list_set_hybrid_enclosure_class.def("bounding_box",&ListSet<HybridEnclosure>::bounding_box);
-    # }
-    #
     # orbit.initial() : the initial set of the orbit.
     # orbit.reach()   : the set of points reached by evolution from the given initial set over the evolution time.
     # orbit.final()   : the set of points reached by evolution from the given initial set at the final evolution time.
@@ -299,7 +259,86 @@ if __name__ == '__main__':
     
     # Create an evolver object and Compute the system evolution
     evolver = create_evolver(system)
-    compute_evolution(evolver, initial_set, final_time)
+    r = compute_evolution(evolver, initial_set, final_time)
+
+    import matplotlib.pyplot as plt
+    # time - height
+    for encl in r:
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(1, 0)
+        x = [p.x for p in points]
+        y = [p.y for p in points]
+        plt.plot(x, y)
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(2, 0)
+        x = [p.x for p in points]
+        y = [p.y for p in points]
+        plt.plot(x, y)
+    plt.show()
+    # time - aperture
+    for encl in r:
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(0, 1)
+        x = [p.x for p in points]
+        y = [p.y for p in points]
+        plt.plot(x, y)
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(2, 1)
+        x = [p.x for p in points]
+        y = [p.y for p in points]
+        plt.plot(x, y)
+    plt.show()
+    # aperture - height
+    for encl in r:
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(0, 2)
+        x = [p.x for p in points]
+        y = [p.y for p in points]
+        plt.plot(x, y)
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(1, 2)
+        x = [p.x for p in points]
+        y = [p.y for p in points]
+        plt.plot(x, y)
+    plt.show()
+    
+    # encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(xcoord, ycoord)
+    # HybridEnclosure -> LabelledEnclosure -> ValidatedConstrainedImageSet -> ValidatedAffineConstrainedImageSet -> List<Point2d>
+    
+    # HybridEnclosure: coppia locazione-insieme
+    # LabelledEnclosure: insieme con variabili simboliche
+    # ValidatedConstrainedImageSet: insieme su spazio euclideo n-dimensionale
+    # ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura)
+    # List<Point2d>: date le coordinate del politopo, lista dei vertici del politopo
+    
+    # Enclosure::bounding_box
+    # Enclosure::state_set
+    # Enclosure::state_auxiliary_set
+    # Enclosure::state_time_auxiliary_set
+    
+    # LabelledEnclosure<Enclosure>::bounding_box
+    
+    # ValidatedConstrainedImageSet::domain
+    # ValidatedConstrainedImageSet::function
+    # ValidatedConstrainedImageSet::constraint
+    # ValidatedConstrainedImageSet::number_of_parameters
+    # ValidatedConstrainedImageSet::number_of_constraints
+    # ValidatedConstrainedImageSet::apply
+    # ValidatedConstrainedImageSet::new_space_constraint
+    # ValidatedConstrainedImageSet::new_parameter_constraint
+    # ValidatedConstrainedImageSet::outer_approximation
+    # ValidatedConstrainedImageSet::affine_approximation
+    # ValidatedConstrainedImageSet::affine_over_approximation
+    # ValidatedConstrainedImageSet::adjoin_outer_approximation_to
+    # ValidatedConstrainedImageSet::bounding_box
+    # ValidatedConstrainedImageSet::inside
+    # ValidatedConstrainedImageSet::separated
+    # ValidatedConstrainedImageSet::overlaps
+    
+    # ValidatedAffineConstrainedImageSet::new_parameter_constraint
+    # ValidatedAffineConstrainedImageSet::new_constraint
+    # ValidatedAffineConstrainedImageSet::dimension
+    # ValidatedAffineConstrainedImageSet::is_bounded
+    # ValidatedAffineConstrainedImageSet::is_empty
+    # ValidatedAffineConstrainedImageSet::bounding_box
+    # ValidatedAffineConstrainedImageSet::separated
+    # ValidatedAffineConstrainedImageSet::adjoin_outer_approximation_to
+    # ValidatedAffineConstrainedImageSet::outer_approximation
+    # ValidatedAffineConstrainedImageSet::boundary
     
     # come per l'evolver, ma si discretizza periodicamente sulla griglia dei possibili stati, così possiamo scalare facilmente (qui abbiamo i rettangoli)
     # non credo di aver capito bene il perché, ma il tempo non è più disponibile a causa dell'utilizzo della griglia (quindi ci fermiamo alla 5a location)
