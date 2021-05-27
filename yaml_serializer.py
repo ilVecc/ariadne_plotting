@@ -262,23 +262,15 @@ if __name__ == '__main__':
     r = compute_evolution(evolver, initial_set, final_time)
 
     import matplotlib.pyplot as plt
-    # time - height
+    # time - aperture
     for encl in r:
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(1, 0)
-        x = [p.x for p in points]
-        y = [p.y for p in points]
-        plt.plot(x, y)
         points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(2, 0)
         x = [p.x for p in points]
         y = [p.y for p in points]
         plt.plot(x, y)
     plt.show()
-    # time - aperture
+    # time - height
     for encl in r:
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(0, 1)
-        x = [p.x for p in points]
-        y = [p.y for p in points]
-        plt.plot(x, y)
         points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(2, 1)
         x = [p.x for p in points]
         y = [p.y for p in points]
@@ -286,11 +278,7 @@ if __name__ == '__main__':
     plt.show()
     # aperture - height
     for encl in r:
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(0, 2)
-        x = [p.x for p in points]
-        y = [p.y for p in points]
-        plt.plot(x, y)
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(1, 2)
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(0, 1)
         x = [p.x for p in points]
         y = [p.y for p in points]
         plt.plot(x, y)
@@ -302,7 +290,10 @@ if __name__ == '__main__':
     # HybridEnclosure: coppia locazione-insieme
     # LabelledEnclosure: insieme con variabili simboliche
     # ValidatedConstrainedImageSet: insieme su spazio euclideo n-dimensionale
-    # ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura)
+    # ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura) le variabili sono  in ordine
+    #                                     1) variabili differenziali in ordine alfabetico,
+    #                                     2) tempo,
+    #                                     3) variabili algebriche in ordine alfabetico
     # List<Point2d>: date le coordinate del politopo, lista dei vertici del politopo
     
     # Enclosure::bounding_box
