@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 from pyariadne import *
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 
 def get_tank():
@@ -244,6 +246,68 @@ def compute_reachability(analyser, initial_set, final_time):
     print("Done computing and plotting outer chain reach set!\n")
 
 
+def plot(orbit_reach, var1, var2):
+    axes = Variables2d(var1, var2)
+    for encl in orbit_reach:
+        prj = projection(encl.state_time_auxiliary_space(), axes)
+        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(prj.i, prj.j)
+        # do not plot polytopes with less then 3 vertices
+        if len(points) > 2:
+            x = [p.x for p in points]
+            x.append(x[0])
+            y = [p.y for p in points]
+            y.append(y[0])
+            plt.plot(x, y)
+    plt.show()
+
+# encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(xcoord, ycoord)
+# HybridEnclosure -> LabelledEnclosure -> ValidatedConstrainedImageSet -> ValidatedAffineConstrainedImageSet -> List<Point2d>
+
+# HybridEnclosure: coppia locazione-insieme
+# LabelledEnclosure: insieme con variabili simboliche
+# ValidatedConstrainedImageSet: insieme su spazio euclideo n-dimensionale
+# ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura) le variabili sono  in ordine
+#                                     1) variabili differenziali in ordine alfabetico,
+#                                     2) tempo,
+#                                     3) variabili algebriche in ordine alfabetico
+# List<Point2d>: date le coordinate del politopo, lista dei vertici del politopo
+
+# Enclosure::bounding_box
+# Enclosure::state_set
+# Enclosure::state_auxiliary_set
+# Enclosure::state_time_auxiliary_set
+
+# LabelledEnclosure<Enclosure>::bounding_box
+
+# ValidatedConstrainedImageSet::domain
+# ValidatedConstrainedImageSet::function
+# ValidatedConstrainedImageSet::constraint
+# ValidatedConstrainedImageSet::number_of_parameters
+# ValidatedConstrainedImageSet::number_of_constraints
+# ValidatedConstrainedImageSet::apply
+# ValidatedConstrainedImageSet::new_space_constraint
+# ValidatedConstrainedImageSet::new_parameter_constraint
+# ValidatedConstrainedImageSet::outer_approximation
+# ValidatedConstrainedImageSet::affine_approximation
+# ValidatedConstrainedImageSet::affine_over_approximation
+# ValidatedConstrainedImageSet::adjoin_outer_approximation_to
+# ValidatedConstrainedImageSet::bounding_box
+# ValidatedConstrainedImageSet::inside
+# ValidatedConstrainedImageSet::separated
+# ValidatedConstrainedImageSet::overlaps
+
+# ValidatedAffineConstrainedImageSet::new_parameter_constraint
+# ValidatedAffineConstrainedImageSet::new_constraint
+# ValidatedAffineConstrainedImageSet::dimension
+# ValidatedAffineConstrainedImageSet::is_bounded
+# ValidatedAffineConstrainedImageSet::is_empty
+# ValidatedAffineConstrainedImageSet::bounding_box
+# ValidatedAffineConstrainedImageSet::separated
+# ValidatedAffineConstrainedImageSet::adjoin_outer_approximation_to
+# ValidatedAffineConstrainedImageSet::outer_approximation
+# ValidatedAffineConstrainedImageSet::boundary
+
+
 if __name__ == '__main__':
     # Get the system, the initial set and the final time
     system = get_system()
@@ -259,77 +323,26 @@ if __name__ == '__main__':
     
     # Create an evolver object and Compute the system evolution
     evolver = create_evolver(system)
-    r = compute_evolution(evolver, initial_set, final_time)
+    orbit_reach = compute_evolution(evolver, initial_set, final_time)
 
-    import matplotlib.pyplot as plt
-    # time - aperture
-    for encl in r:
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(2, 0)
-        x = [p.x for p in points]
-        y = [p.y for p in points]
-        plt.plot(x, y)
-    plt.show()
-    # time - height
-    for encl in r:
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(2, 1)
-        x = [p.x for p in points]
-        y = [p.y for p in points]
-        plt.plot(x, y)
-    plt.show()
-    # aperture - height
-    for encl in r:
-        points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(0, 1)
-        x = [p.x for p in points]
-        y = [p.y for p in points]
-        plt.plot(x, y)
-    plt.show()
+    t = RealVariable("t")
+    height = RealVariable("height")
+    aperture = RealVariable("aperture")
     
-    # encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(xcoord, ycoord)
-    # HybridEnclosure -> LabelledEnclosure -> ValidatedConstrainedImageSet -> ValidatedAffineConstrainedImageSet -> List<Point2d>
+    plot(orbit_reach, t, aperture)
+    plot(orbit_reach, t, height)
+    plot(orbit_reach, height, aperture)
     
-    # HybridEnclosure: coppia locazione-insieme
-    # LabelledEnclosure: insieme con variabili simboliche
-    # ValidatedConstrainedImageSet: insieme su spazio euclideo n-dimensionale
-    # ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura) le variabili sono  in ordine
-    #                                     1) variabili differenziali in ordine alfabetico,
-    #                                     2) tempo,
-    #                                     3) variabili algebriche in ordine alfabetico
-    # List<Point2d>: date le coordinate del politopo, lista dei vertici del politopo
-    
-    # Enclosure::bounding_box
-    # Enclosure::state_set
-    # Enclosure::state_auxiliary_set
-    # Enclosure::state_time_auxiliary_set
-    
-    # LabelledEnclosure<Enclosure>::bounding_box
-    
-    # ValidatedConstrainedImageSet::domain
-    # ValidatedConstrainedImageSet::function
-    # ValidatedConstrainedImageSet::constraint
-    # ValidatedConstrainedImageSet::number_of_parameters
-    # ValidatedConstrainedImageSet::number_of_constraints
-    # ValidatedConstrainedImageSet::apply
-    # ValidatedConstrainedImageSet::new_space_constraint
-    # ValidatedConstrainedImageSet::new_parameter_constraint
-    # ValidatedConstrainedImageSet::outer_approximation
-    # ValidatedConstrainedImageSet::affine_approximation
-    # ValidatedConstrainedImageSet::affine_over_approximation
-    # ValidatedConstrainedImageSet::adjoin_outer_approximation_to
-    # ValidatedConstrainedImageSet::bounding_box
-    # ValidatedConstrainedImageSet::inside
-    # ValidatedConstrainedImageSet::separated
-    # ValidatedConstrainedImageSet::overlaps
-    
-    # ValidatedAffineConstrainedImageSet::new_parameter_constraint
-    # ValidatedAffineConstrainedImageSet::new_constraint
-    # ValidatedAffineConstrainedImageSet::dimension
-    # ValidatedAffineConstrainedImageSet::is_bounded
-    # ValidatedAffineConstrainedImageSet::is_empty
-    # ValidatedAffineConstrainedImageSet::bounding_box
-    # ValidatedAffineConstrainedImageSet::separated
-    # ValidatedAffineConstrainedImageSet::adjoin_outer_approximation_to
-    # ValidatedAffineConstrainedImageSet::outer_approximation
-    # ValidatedAffineConstrainedImageSet::boundary
+    # testing plotly
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=[1.5, 3],
+        y=[2.5, 2.5],
+        text=["Rectangle reference to the plot",
+              "Rectangle reference to the axes"],
+        mode="text",
+    ))
+    fig.show()
     
     # come per l'evolver, ma si discretizza periodicamente sulla griglia dei possibili stati, così possiamo scalare facilmente (qui abbiamo i rettangoli)
     # non credo di aver capito bene il perché, ma il tempo non è più disponibile a causa dell'utilizzo della griglia (quindi ci fermiamo alla 5a location)
