@@ -12,12 +12,14 @@ def plot(orbit_reach, var1, var2):
         prj = projection(encl.state_time_auxiliary_space(), axes)
         points = encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(prj.i, prj.j)
         # do not plot polytopes with less then 3 vertices
-        if len(points) > 2:
+        if len(points) >= 2:
             x = [p.x for p in points]
             x.append(x[0])
             y = [p.y for p in points]
             y.append(y[0])
             plt.plot(x, y)
+        else:
+            print('WARNING: the polytope has less than 2 vertices')
     plt.show()
 
 
@@ -101,5 +103,5 @@ if __name__ == '__main__':
     orbit = example_system.compute_evolution(evolver, initial_set, final_time)
     orbit_reach = orbit.reach()
     
-    # batch_matplotlib_plot(orbit_reach)
-    batch_plotly_plot(orbit_reach)
+    batch_matplotlib_plot(orbit_reach)
+    # batch_plotly_plot(orbit_reach)
