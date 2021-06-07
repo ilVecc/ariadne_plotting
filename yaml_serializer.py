@@ -85,6 +85,9 @@ def serialize(hybrid_enclosure_list_set):
 
 
 if __name__ == '__main__':
+    
+    controller = example_system.get_controller()
+    
     # Get the system, the initial set and the final time
     system = example_system.get_system()
     initial_set = example_system.get_initial_set()
