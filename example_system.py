@@ -13,7 +13,7 @@ def get_tank():
     height = RealVariable("height")
     
     # Create the tank automaton
-    automaton = HybridAutomaton()
+    automaton = HybridAutomaton("tank")
     
     # The water level is always given by the same dynamic.
     # The inflow is controlled by the valve aperture, the outflow depends on the

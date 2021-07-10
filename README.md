@@ -15,3 +15,10 @@ Professors:
 - Luca Geretti - luca.geretti@univr.it
 - Tiziano Villa - tiziano.villa@univr.it
 
+
+### Install
+```
+sudo apt-get install graphviz graphviz-dev
+sudo apt-get install libxml2-dev libxslt-dev
+pip install -r requirements
+```
