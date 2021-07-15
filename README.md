@@ -1,6 +1,10 @@
-# Ariadne Python Dashboard
+# Ariadne Dashboard
 
-## Project for Discrete Hybrid Systems exam @ University of Verona
+![alt text](https://raw.githubusercontent.com/ilVecc/ariadne_python_plotter/main/images_doc/evolution_3d_plot.png)
+
+## Utility to plot and visualize Ariadne systems' evolutions and automatons.
+
+#### Project for Discrete Hybrid Systems exam @ University of Verona
 
 ### Objectives:
 Main purpose of this project is to implement a way to visualize polytopes (hybrid enclosures) and graph automatons produced by python-binded version of [Ariadne](https://github.com/ariadne-cps/ariadne) C++ library. This extension of Ariadne will be implemented employing mainly the libraries:
@@ -24,6 +28,8 @@ Professors:
 
 
 ### Install
+- Install [Ariadne](https://www.ariadne-cps.org/installation/) (pyariadne included)
+- clone this repo and run:
 ```
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
