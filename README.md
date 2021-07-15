@@ -1,10 +1,17 @@
-# Ariadne Python Plotter
+# Ariadne Python Dashboard
 
 ## Project for Discrete Hybrid Systems exam @ University of Verona
 
 ### Objectives:
-Main purpose of this project is to implement a way to visualize polytopes (hybrid enclosures) produced by python-binded version of [Ariadne](https://github.com/ariadne-cps/ariadne) C++ library. This plotting will be implemented employing [pyplot](https://plotly.com/) library.
-A serialization tool in yaml will also be included. This will permit to export results in a more general way.
+Main purpose of this project is to implement a way to visualize polytopes (hybrid enclosures) and graph automatons produced by python-binded version of [Ariadne](https://github.com/ariadne-cps/ariadne) C++ library. This extension of Ariadne will be implemented employing mainly the libraries:
+- [plotly](https://plotly.com/) - plotting of evolutions
+- [dash](https://dash.plotly.com/) - dashboard interface
+- [dash cytoscape](https://dash.plotly.com/cytoscape) - plot of automatons
+
+
+
+A serialization tool in [YAML](https://yaml.org/) will also be included. This will permit to export results in a more general way.
+At the moment since there are some incompatibilities with MacOS users, this feature is not included.
 
 ### People involved:
 Students:
@@ -18,7 +25,5 @@ Professors:
 
 ### Install
 ```
-sudo apt-get install graphviz graphviz-dev
-sudo apt-get install libxml2-dev libxslt-dev
-pip install -r requirements
+pip install -r requirements.txt
 ```
