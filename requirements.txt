@@ -1,4 +1,4 @@
-matplotlib
+pandas
 plotly
-pygraphviz
-svgutils
+dash
+dash_cytoscape

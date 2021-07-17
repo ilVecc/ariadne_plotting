@@ -1,0 +1,3 @@
+pygraphviz
+svgutils
+matplotlib

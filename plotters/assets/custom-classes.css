@@ -1,0 +1,13 @@
+.available {
+    pointer-events: auto;
+    opacity: 1.0
+}
+
+.unavailable {
+    pointer-events: none;
+    opacity: 0.4
+}
+
+.disabled {
+    display: none;
+}

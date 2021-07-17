@@ -20,7 +20,7 @@ def make_graph(system):
     
     locations = dict(enumerate(system.locations()))
     
-    # TODO get name
+    # TODO GERETTI: get automaton name
     model_name = explode_location(list(locations.values())[0])[0]
     
     graph = pgv.AGraph(
@@ -32,8 +32,8 @@ def make_graph(system):
     for i, loc in locations.items():
         # get location info
         location_name = explode_location(loc)[1]
-        # TODO get the variables' names, which get print but can't be retrieved
-        # TODO get algebraic function
+        # TODO GERETTI: get the variables' names, which get print but can't be retrieved
+        # TODO GERETTI: get algebraic function
         dynamic_function = binding_safe_get(lambda: system.dynamic_function(loc))
         algebraic_function = None  # binding_safe_get(lambda: system.algebraic_function(loc))
         graph.add_node(location_name,
@@ -51,7 +51,7 @@ def make_graph(system):
                 'event_kind': binding_safe_get(lambda: system.event_kind(loc, event).name),
                 # when this event is not an invariant (es. PERMISSIVE), then it has a triggering guard
                 'guard_function': binding_safe_get(lambda: system.guard_function(loc, event)),
-                # TODO get invariant function
+                # TODO GERETTI: get invariant function
                 # 'invariant_function': safe_get(lambda: system.invariant_function(loc, event)),
                 'reset_fun': binding_safe_get(lambda: system.reset_function(loc, event))
             }
@@ -114,9 +114,9 @@ def tweak_svg(path, graph):
             
             # rotate text by calculated angle
             edge_text = xml_edge.find('default:text', ns)
-            edge_text.set('x', f'{(to_coord[0] + from_coord[0]) / 2 + distance_from_edge * math.sin(-angle)}')
-            edge_text.set('y', f'{-(to_coord[1] + from_coord[1]) / 2 + 3.5 - distance_from_edge * math.cos(-angle)}')
-            edge_text.set('transform', f"rotate({-angle / math.pi * 180}, {edge_text.get('x')}, {edge_text.get('y')})")
+            edge_text.set('x', f'{(to_coord[0] + from_coord[0]) / 2 + distance_from_edge * math.sin(angle)}')
+            edge_text.set('y', f'{(to_coord[1] + from_coord[1]) / 2 + 4 - distance_from_edge * math.cos(angle)}')
+            edge_text.set('transform', f"rotate({angle / math.pi * 180}, {edge_text.get('x')}, {edge_text.get('y')})")
         else:
             has_self_loops = True
             # this is a self-loop edge
@@ -182,7 +182,7 @@ def tweak_svg(path, graph):
 
 if __name__ == '__main__':
     
-    # TODO CompositeHybridAutomaton is not iterable
+    # TODO GERETTI: CompositeHybridAutomaton is not iterable
     subsystems = ['controller', 'tank', 'valve']
     for subsystem_name in subsystems:
         
