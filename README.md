@@ -2,7 +2,7 @@
 
 ![alt text](https://raw.githubusercontent.com/ilVecc/ariadne_python_plotter/main/images_doc/evolution_3d_plot.png)
 
-## Utility for plotting and interactive visualization of evolutions and automaton of Ariadne systems.
+## Utility for plotting and interactive visualization of evolutions and automatons of Ariadne systems.
 
 
 
