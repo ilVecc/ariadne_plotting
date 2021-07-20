@@ -55,7 +55,7 @@ import example_system
 #                             .outer_approximation                (Ariadne::Grid, int) -> Ariadne::GridTreePaving
 
 
-class IOState(Enum):
+class EvolutionState(Enum):
     NONE = auto(),
     MISSING = auto(),
     ERROR = auto(),
@@ -67,7 +67,8 @@ class IOState(Enum):
 
 class PersistenceManager(object):
     orbit_dump_filename = "orbit.pkl"
-    io_state = IOState.NONE
+    state = EvolutionState.NONE
+    last_error = ''
     
     _orbit = None
     
@@ -81,33 +82,39 @@ class PersistenceManager(object):
     def load_orbit(self):
         if os.path.isfile(self.orbit_dump_filename):
             print('Loading from file...', end='')
-            self.io_state = IOState.LOADING
+            self.state = EvolutionState.LOADING
+            self.last_error = ''
             try:
                 with open(self.orbit_dump_filename, "rb") as f:
                     dump = pickle.load(f)
                 self.all_variables_names = dump['variables']
                 self.polytopes = dump['polytopes']
                 print('done')
-                self.io_state = IOState.LOADED
-            except Exception:
+                self.state = EvolutionState.LOADED
+                self.last_error = ''
+            except Exception as ex:
                 print('ERROR! dump file could not be opened, keeping current trajectory')
-                self.io_state = IOState.ERROR
+                self.state = EvolutionState.ERROR
+                self.last_error = ex
         else:
             print('ERROR! dump file not found, keeping current trajectory')
-            self.io_state = IOState.MISSING
+            self.state = EvolutionState.MISSING
+            self.last_error = ''
     
     def save_orbit(self):
         data = {
             'variables': self.all_variables_names,
             'polytopes': self.polytopes
         }
-        self.io_state = IOState.SAVING
+        self.state = EvolutionState.SAVING
+        self.last_error = ''
         try:
             with open(self.orbit_dump_filename, "wb") as f:
                 pickle.dump(data, f)
-            self.io_state = IOState.SAVED
-        except Exception:
-            self.io_state = IOState.ERROR
+            self.state = EvolutionState.SAVED
+        except Exception as ex:
+            self.state = EvolutionState.ERROR
+            self.last_error = ex
     
     def clear_orbit(self):
         if os.path.isfile(self.orbit_dump_filename):
@@ -116,18 +123,24 @@ class PersistenceManager(object):
             print('done')
         else:
             print('WARNING! dump file not found')
-        self.io_state = IOState.MISSING
+        self.state = EvolutionState.MISSING
+        self.last_error = ''
     
     def run_evolution(self, initial_set, final_time):
         evolver = ari.GeneralHybridEvolver(self.system)
         # set the evolver configuration
         # TODO add a way to set these parameters
+        # evolver.configuration().set_enable_reconditioning(self: ari.GeneralHybridEvolverConfiguration, arg0: bool) -> None
+        # evolver.configuration().set_enable_subdivisions(self: ari.GeneralHybridEvolverConfiguration, arg0: bool) -> None
+        # evolver.configuration().set_maximum_enclosure_radius(self: ari.GeneralHybridEvolverConfiguration, arg0: ari.ApproximateDouble) -> None
+        # evolver.configuration().set_maximum_spacial_error(self: ari.GeneralHybridEvolverConfiguration, arg0: ari.ApproximateDouble) -> None
+        # evolver.configuration().set_maximum_step_size(self: ari.GeneralHybridEvolverConfiguration, arg0: ari.ApproximateDouble) -> None
         evolver.configuration().set_maximum_enclosure_radius(3.0)
         evolver.configuration().set_maximum_step_size(0.25)
         orbit = evolver.orbit(initial_set, ari.HybridTerminationCriterion(final_time), ari.Semantics.UPPER)
         orbit_reach = orbit.reach()
         
-        # TODO GERETTI: there's no way of explicitly getting the list of all the variables, but this might be enough
+        # FIXME GERETTI: there's no way of explicitly getting the list of all the variables, but this might be enough
         self._all_variables = [orbit_reach[0].state_time_auxiliary_space().variable(i) for i in range(orbit_reach[0].state_time_auxiliary_space().dimension())]
         self.all_variables_names = [str(v) for v in self._all_variables]
         self._orbit = orbit
@@ -149,7 +162,7 @@ class PersistenceManager(object):
             # we extract the polytope points accordingly to the axes we want
             polytope_points_2d = [encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(p.i, p.j) for p in prj]
             # avoid punctual polytopes
-            # TODO GERETTI: for some reason, projections output polytopes inconsistent in point number
+            # FIXME GERETTI: for some reason, projections output polytopes inconsistent in points number
             min_prj = min([len(axes_points_2d) for axes_points_2d in polytope_points_2d])
             if min_prj >= 2:
                 # get actual coordinates of the vertices of the polytope
@@ -186,14 +199,14 @@ class App(object):
     
     def __init__(self, system):
         self.hybrid_system = system
-        # TODO GERETTI: CompositeHybridAutomaton is not iterable, but I need this list programmatically
+        # FIXME GERETTI: CompositeHybridAutomaton is not iterable, but I need this list programmatically
         self.automatons = ['controller', 'tank', 'valve']
         
         # create graphs of the automatons
         self._batch_analyze()
         
         self.configurable_automatons = [automaton_name for automaton_name, automaton_info in self.automatons_analysis.items() if automaton_info['configurable']]
-        # TODO GERETTI: need a way to get the set of dynamic variables at stake in a certain location
+        # FIXME GERETTI: need a way to get the set of dynamic variables at stake in a certain location
         self.configurable_variables = sorted(set([var for automaton_info in self.automatons_analysis.values() for var in automaton_info['dynamics'].values()]))
         dynamics = {
             'controller': {
@@ -216,8 +229,8 @@ class App(object):
     
     def _analyze_automaton(self, automaton: ari.HybridAutomaton, name=None):
         def explode_location(location):
-            # if empty location, the system has one location only, thus the 'no_name' and the '_' location
-            return tuple((str(location)[1:-1]).split('|')) if '|' in str(location) else (name if name else 'no_name', '_')
+            # if empty location, the system has one location only, thus the 'no_name' and the '--' location
+            return tuple((str(location)[1:-1]).split('|')) if '|' in str(location) else (name if name else 'no_name', '--')
         
         def binding_safe_get(pybind_fun_call):
             try:
@@ -227,7 +240,7 @@ class App(object):
         
         locations = dict(enumerate(automaton.locations()))
         
-        # TODO GERETTI: get name
+        # FIXME GERETTI: get automaton name
         model_name = explode_location(list(locations.values())[0])[0]
         
         info = {
@@ -243,8 +256,8 @@ class App(object):
         for i, loc in locations.items():
             # get location info
             location_name = explode_location(loc)[1]
-            # TODO GERETTI: get the variables' names, which get print but can't be retrieved
-            # TODO GERETTI: get algebraic function
+            # FIXME GERETTI: get the variables' names, which get print but can't be retrieved
+            # FIXME GERETTI: get algebraic function
             dynamic_function = binding_safe_get(lambda: automaton.dynamic_function(loc))
             algebraic_function = None  # binding_safe_get(lambda: system.algebraic_function(loc))
             info['nodes'][f'node{i}'] = {
@@ -256,7 +269,7 @@ class App(object):
                 }
             }
             info['locations'].append(location_name)
-            info['dynamics'][location_name] = None  # TODO get variable of dynamic function, if existing
+            info['dynamics'][location_name] = None  # FIXME GERETTI: get variable of dynamic function, if existing
             
             # possible events when in this location
             for event in automaton.events(loc):
@@ -271,7 +284,7 @@ class App(object):
                         'event_kind': binding_safe_get(lambda: automaton.event_kind(loc, event).name),
                         # when this event is not an invariant (es. PERMISSIVE), then it has a triggering guard
                         'guard_function': str(binding_safe_get(lambda: automaton.guard_function(loc, event))),
-                        # TODO GERETTI: get invariant function
+                        # FIXME GERETTI: get invariant function
                         # 'invariant_function': safe_get(lambda: system.invariant_function(loc, event)),
                         'reset_fun': str(binding_safe_get(lambda: automaton.reset_function(loc, event)))
                     }
@@ -285,7 +298,7 @@ class App(object):
         return info
     
     def _batch_analyze(self):
-        # TODO GERETTI: as above, can iterate self.hybrid_system
+        # FIXME GERETTI: as above, can iterate self.hybrid_system
         for automaton_name in self.automatons:
             # get automaton of interest
             automaton = getattr(example_system, f'get_{automaton_name}')()
@@ -301,13 +314,87 @@ class App(object):
 app_logic = App(example_system.get_system())
 
 # build dashboard
-app = dash.Dash(__name__, external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css'])
+app = dash.Dash(__name__,
+                external_stylesheets=[
+                    'https://codepen.io/chriddyp/pen/bWLwgP.css'
+                ],
+                meta_tags=[
+                    {"name": "viewport", "content": "width=device-width, initial-scale=1"}
+                ])
 app.layout = html.Div([
     html.Div(id='placeholder', style={'display': 'none'}),
-    html.H1('Ariadne TimeMachine'),
+    html.H1('Ariadne Dashboard'),
     html.Div([
         html.H4('Evolver Configurator'),
         html.Div([
+            html.Div([
+                core.Loading(
+                    id="loading-automaton",
+                    type="default",
+                    children=[
+                        html.Div([
+                            html.H6('Automaton selector'),
+                            core.ConfirmDialog(
+                                id='system-import-not-implemented',
+                                message='This feature is currently not implemented',
+                            ),
+                            html.Div([
+                                html.Button('Import hybrid system', id='system-import', n_clicks=0)
+                            ],
+                                style={
+                                    'margin-bottom': '1%',
+                                    'display': 'flex',
+                                    'flex-direction': 'row',
+                                    'place-content': 'space-around',
+                                    'justify-content': 'space-around',
+                                    'align-content': 'center',
+                                    'align-items': 'center'
+                                }
+                            ),
+                            core.Dropdown(
+                                id='automaton-selector',
+                                options=[{'label': automaton_name, 'value': automaton_name} for automaton_name in sorted(app_logic.automatons)]
+                            ),
+                            cyto.Cytoscape(
+                                id='automaton-graph',
+                                layout={
+                                    'name': 'circle'
+                                },
+                                elements=[],
+                                stylesheet=[
+                                    {
+                                        'selector': 'node',
+                                        'style': {
+                                            'label': 'data(label)',
+                                            # FIXME node size programmatically
+                                            'min-width': 'label',
+                                            'width': 'label',
+                                            'min-height': 'label',
+                                            'height': 'label',
+                                            'text-transform': 'uppercase',
+                                            'text-valign': 'center',
+                                            'text-halign': 'center'
+                                        }
+                                    },
+                                    {
+                                        'selector': 'edge',
+                                        'style': {
+                                            'label': 'data(label)',
+                                            'curve-style': 'bezier',
+                                            'target-arrow-shape': 'triangle',
+                                            'text-rotation': 'autorotate'
+                                        }
+                                    }
+                                ],
+                                responsive=True,
+                                style={'height': '65vh'}
+                            )
+                        ])
+                    ]
+                )
+            ],
+                style={'width': '49%', 'display': 'inline-block'}
+            ),
             html.Div([
                 core.Loading(
                     id='loading-evolution',
@@ -424,7 +511,7 @@ app.layout = html.Div([
                         ],
                             style={'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '1%'}
                         ),
-                        # run evolution button
+                        # run/clean evolution buttons
                         html.Div([
                             html.Button('Run evolution', id='run-evolution', n_clicks=0),
                             html.Button('Clear evolution', id='clear-evolution', n_clicks=0)
@@ -439,61 +526,32 @@ app.layout = html.Div([
                                 'align-items': 'center'
                             }
                         ),
-                        html.H4(
-                            '',
-                            id='run-state'
-                        )
-                    ]
-                )
-            ],
-                style={'width': '49%', 'display': 'inline-block'}
-            ),
-            html.Div([
-                core.Loading(
-                    id="loading-automaton",
-                    type="default",
-                    children=[
                         html.Div([
-                            html.H6('Automaton selector'),
-                            core.Dropdown(
-                                id='automaton-selector',
-                                options=[{'label': automaton_name, 'value': automaton_name} for automaton_name in sorted(app_logic.automatons)]
+                            html.H5(
+                                '',
+                                id='run-state',
+                                style={
+                                    'text-align': 'center',
+                                    'text-transform': 'uppercase'
+                                }
                             ),
-                            cyto.Cytoscape(
-                                id='automaton-graph',
-                                layout={
-                                    'name': 'circle'
-                                },
-                                elements=[],
-                                stylesheet=[
-                                    {
-                                        'selector': 'node',
-                                        'style': {
-                                            'label': 'data(label)',
-                                            # TODO node size programmatically
-                                            'min-width': 'label',
-                                            'width': 'label',
-                                            'min-height': 'label',
-                                            'height': 'label',
-                                            'text-transform': 'uppercase',
-                                            'text-valign': 'center',
-                                            'text-halign': 'center'
-                                        }
-                                    },
-                                    {
-                                        'selector': 'edge',
-                                        'style': {
-                                            'label': 'data(label)',
-                                            'curve-style': 'bezier',
-                                            'target-arrow-shape': 'triangle',
-                                            'text-rotation': 'autorotate'
-                                        }
-                                    }
-                                ],
-                                responsive=True,
-                                style={'height': '65vh'}
+                            html.Plaintext(
+                                '',
+                                id='run-error',
+                                style={
+                                    'font-family': 'monospace',
+                                    'padding-left': '10pt',
+                                    'padding-right': '10pt',
+                                    # 'padding-bottom': '6pt'
+                                }
                             )
-                        ])
+                        ],
+                            style={
+                                'background-color': '#eeeeee',
+                                'border-radius': '10pt',
+                                'margin-top': '2%'
+                            }
+                        )
                     ]
                 )
             ],
@@ -577,7 +635,17 @@ app.layout = html.Div([
 
 
 @app.callback(
+    Output('system-import-not-implemented', 'displayed'),
+    Input('system-import', 'n_clicks'),
+    prevent_initial_call=True
+)
+def import_system(_):
+    return True
+
+
+@app.callback(
     Output('run-state', 'children'),
+    Output('run-error', 'children'),
     Input('run-evolution', 'n_clicks'),
     Input('clear-evolution', 'n_clicks'),
     State('config-final-time', 'value'),
@@ -594,44 +662,64 @@ def run_system_evolution(_, __, final_time, max_transitions, locations, are_rang
         # load last run
         print("Reloading last trajectory")
         app_logic.persistence.load_orbit()
-        if app_logic.persistence.io_state == IOState.ERROR:
-            return 'Error'
-        if app_logic.persistence.io_state == IOState.MISSING:
-            return 'Missing'
-        elif app_logic.persistence.io_state == IOState.LOADED:
-            return 'Loaded'
-        elif app_logic.persistence.io_state == IOState.SAVED:
-            return 'Saved'
+        if app_logic.persistence.state == EvolutionState.ERROR:
+            return 'Error', f'{app_logic.persistence.last_error}'
+        if app_logic.persistence.state == EvolutionState.MISSING:
+            return 'Missing', ''
+        elif app_logic.persistence.state == EvolutionState.LOADED:
+            return 'Loaded', ''
+        elif app_logic.persistence.state == EvolutionState.SAVED:
+            return 'Saved', ''
     
     if dash.callback_context.triggered[0]['prop_id'].split('.')[0] == 'clear-evolution':
         app_logic.persistence.clear_orbit()
-        return 'Missing'
+        return 'Missing', ''
     
-    if final_time is None or max_transitions is None:
-        raise dash.exceptions.PreventUpdate
+    if final_time is None:
+        return 'Missing parameters', 'Specify a valid final time'
+    if max_transitions is None:
+        return 'Missing parameters', 'Specify a maximum number of transitions'
+    for automaton_name, automaton_location in zip(app_logic.configurable_automatons, locations):
+        if automaton_location is None:
+            return 'Missing parameters', f'Specify initial location for automaton \"{automaton_name}\"'
+    for variable_name, r, l, u in zip(app_logic.configurable_variables, are_range, lower_bounds, upper_bounds):
+        if r:
+            if l is None:
+                return 'Missing parameters', f'Specify lower bound for variable \"{variable_name}\"'
+            if u is None:
+                return 'Missing parameters', f'Specify upper bound for variable \"{variable_name}\"'
+        else:
+            if l is None:
+                return 'Missing parameters', f'Specify value for variable \"{variable_name}\"'
     
-    initial_location = {
-        ari.StringVariable(subsystem_name): ari.String(subsystem_location)
-        for subsystem_name, subsystem_location in zip(app_logic.configurable_automatons, locations)
-    }
-    initial_conditions = [
-        variable == lower_bound
-        if not is_range else
-        (
-            ari.dec(lower_bound) <= variable
-            if include_lower else
-            ari.dec(lower_bound) < variable
-        ) & (
-            variable <= ari.dec(upper_bound)
-            if include_upper else
-            variable < ari.dec(upper_bound)
-        )
-        for variable, is_range, lower_bound, upper_bound, include_lower, include_upper
-        in zip([ari.RealVariable(var) for var in app_logic.configurable_variables], are_range, lower_bounds, upper_bounds, include_lowers, include_uppers)
-    ]
-    
-    initial_set = ari.HybridBoundedConstraintSet(initial_location, initial_conditions)
-    final_time = ari.HybridTerminationCriterion(ari.HybridTime(ari.dec(float(final_time)), int(max_transitions)))
+    try:
+        initial_location = {
+            ari.StringVariable(automaton_name): ari.String(automaton_location)
+            for automaton_name, automaton_location in zip(app_logic.configurable_automatons, locations)
+        }
+        initial_conditions = [
+            variable == lower_bound
+            if not is_range else
+            (
+                ari.dec(lower_bound) <= variable
+                if include_lower else
+                ari.dec(lower_bound) < variable  # FIXME GERETTI: this breaks Ariadne
+            ) & (
+                variable <= ari.dec(upper_bound)
+                if include_upper else
+                variable < ari.dec(upper_bound)  # FIXME GERETTI: this breaks Ariadne
+            )
+            for variable, is_range, lower_bound, upper_bound, include_lower, include_upper
+            in zip([ari.RealVariable(var) for var in app_logic.configurable_variables], are_range, lower_bounds, upper_bounds, include_lowers, include_uppers)
+        ]
+        
+        initial_set = ari.HybridBoundedConstraintSet(initial_location, initial_conditions)
+        final_time = ari.HybridTime(ari.dec(float(final_time)), int(max_transitions))
+    except Exception as ex:
+        # PyAriadne errors, should never happen though...
+        app_logic.persistence.state = EvolutionState.ERROR
+        app_logic.persistence.last_error = ex
+        return 'Error configuring!', f'{ex}'
     
     try:
         # let the system evolve over the given time
@@ -639,7 +727,10 @@ def run_system_evolution(_, __, final_time, max_transitions, locations, are_rang
         app_logic.persistence.run_evolution(initial_set, final_time)
         print('done')
     except Exception as ex:
-        return f'Error evolving! {ex}'
+        # PyAriadne errors, should never happen though...
+        app_logic.persistence.state = EvolutionState.ERROR
+        app_logic.persistence.last_error = ex
+        return 'Error evolving!', f'{ex}'
     
     try:
         print('Extracting projections...', end='')
@@ -647,16 +738,20 @@ def run_system_evolution(_, __, final_time, max_transitions, locations, are_rang
         print('done')
     except Exception as ex:
         # should never happen, just in case...
-        return f'Error extracting! {ex}'
+        app_logic.persistence.state = EvolutionState.ERROR
+        app_logic.persistence.last_error = ex
+        return 'Error extracting!', f'{ex}'
     
     try:
         print('Dumping to file...', end='')
         app_logic.persistence.save_orbit()
         print('done')
     except Exception as ex:
-        return f'Error dumping! {ex}'
+        app_logic.persistence.state = EvolutionState.ERROR
+        app_logic.persistence.last_error = ex
+        return 'Error dumping!', f'{ex}'
     
-    return 'Done'
+    return 'Done', ''
 
 
 @app.callback(
@@ -670,8 +765,8 @@ def run_system_evolution(_, __, final_time, max_transitions, locations, are_rang
     Input('run-state', 'children')
 )
 def enable_trajectory_plotter(_):
-    if app_logic.persistence.io_state == IOState.LOADED \
-            or app_logic.persistence.io_state == IOState.SAVED:
+    if app_logic.persistence.state == EvolutionState.LOADED \
+            or app_logic.persistence.state == EvolutionState.SAVED:
         options = [{'label': i, 'value': i} for i in app_logic.persistence.all_variables_names]
         val = app_logic.persistence.polytopes['time'].max()
         return 'available', options, options, options, val, val / 100, [0, val]
@@ -728,7 +823,7 @@ def update_trajectory_plot(selected_time, var_x, var_y, var_z):
                           color="loc", line_group="polytope_id")
         else:
             fig = px.line_3d(filtered_df, x=var_x, y=var_y, z=var_z,
-                             color="loc", line_group="id")
+                             color="loc", line_group="polytope_id")
     fig.update_layout(transition_duration=500)
     return fig
 

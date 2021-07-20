@@ -1,11 +1,11 @@
 .available {
     pointer-events: auto;
-    opacity: 1.0
+    opacity: 1.0;
 }
 
 .unavailable {
     pointer-events: none;
-    opacity: 0.4
+    opacity: 0.4;
 }
 
 .disabled {
