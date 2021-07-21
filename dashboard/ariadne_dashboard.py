@@ -1,4 +1,10 @@
 #!/usr/bin/python3
+
+# __version__ = '1.0'
+# __all__ = [
+#     'launch'
+# ]
+
 import os.path
 import pickle
 import sys
@@ -10,49 +16,11 @@ import dash_cytoscape as cyto
 import dash_html_components as html
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objs as go
 import pyariadne as ari
 from dash.dependencies import Output, Input, State, MATCH, ALL
 
-import example_system
-
-
-# encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(var_x, var_y)
-# HybridEnclosure -> LabelledEnclosure -> ValidatedConstrainedImageSet -> ValidatedAffineConstrainedImageSet -> List<Point2d>
-
-# HybridEnclosure: coppia locazione-insieme
-# LabelledEnclosure: insieme con variabili simboliche
-# ValidatedConstrainedImageSet: insieme su spazio euclideo n-dimensionale
-# ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura) le variabili sono  in ordine
-#                                     1) variabili differenziali in ordine alfabetico,
-#                                     2) tempo,
-#                                     3) variabili algebriche in ordine alfabetico
-# List<Point2d>: date le coordinate del politopo, lista dei vertici del politopo
-
-# Enclosure.location
-#          .previous_events
-#          .continuous_set
-#          .time_range
-#          .auxiliary_space
-#          .state_space
-#          .state_auxiliary_space
-#          .state_time_auxiliary_space
-#          .state_bounding_box
-# domain = [state_space, time_range]
-
-# LabelledEnclosure.bounding_box                     range(state) + range(time)
-#                  .dimension                        dim(state) + dim(time)
-#                  .state_set
-#                  .state_auxiliary_set
-#                  .state_time_auxiliary_set
-
-# ValidatedConstrainedImageSet.adjoin_outer_approximation_to
-#                             .affine_approximation
-#                             .affine_over_approximation
-#                             .bounding_box
-#                             .dimension
-#                             .domain                             range(state) + range(time)
-#                             .function                           state function
-#                             .outer_approximation                (Ariadne::Grid, int) -> Ariadne::GridTreePaving
+from systems import tutorial_system
 
 
 class EvolutionState(Enum):
@@ -145,6 +113,43 @@ class PersistenceManager(object):
         self.all_variables_names = [str(v) for v in self._all_variables]
         self._orbit = orbit
     
+    # encl.continuous_set().state_time_auxiliary_set().affine_over_approximation().boundary(var_x, var_y)
+    # HybridEnclosure -> LabelledEnclosure -> ValidatedConstrainedImageSet -> ValidatedAffineConstrainedImageSet -> List<Point2d>
+    
+    # HybridEnclosure: coppia locazione-insieme
+    # LabelledEnclosure: insieme con variabili simboliche
+    # ValidatedConstrainedImageSet: insieme su spazio euclideo n-dimensionale
+    # ValidatedAffineConstrainedImageSet: proiezione 2-dimensionale dell'insieme su due variabili (es. tempo/apertura) le variabili sono  in ordine
+    #                                     1) variabili differenziali in ordine alfabetico,
+    #                                     2) tempo,
+    #                                     3) variabili algebriche in ordine alfabetico
+    # List<Point2d>: date le coordinate del politopo, lista dei vertici del politopo
+    
+    # Enclosure.location
+    #          .previous_events
+    #          .continuous_set
+    #          .time_range
+    #          .auxiliary_space
+    #          .state_space
+    #          .state_auxiliary_space
+    #          .state_time_auxiliary_space
+    #          .state_bounding_box
+    # domain = [state_space, time_range]
+    
+    # LabelledEnclosure.bounding_box                     range(state) + range(time)
+    #                  .dimension                        dim(state) + dim(time)
+    #                  .state_set
+    #                  .state_auxiliary_set
+    #                  .state_time_auxiliary_set
+    
+    # ValidatedConstrainedImageSet.adjoin_outer_approximation_to
+    #                             .affine_approximation
+    #                             .affine_over_approximation
+    #                             .bounding_box
+    #                             .dimension
+    #                             .domain                             range(state) + range(time)
+    #                             .function                           state function
+    #                             .outer_approximation                (Ariadne::Grid, int) -> Ariadne::GridTreePaving
     def extract_projections(self, var_list=None):
         
         if not var_list:
@@ -301,7 +306,7 @@ class App(object):
         # FIXME GERETTI: as above, can iterate self.hybrid_system
         for automaton_name in self.automatons:
             # get automaton of interest
-            automaton = getattr(example_system, f'get_{automaton_name}')()
+            automaton = getattr(tutorial_system, f'get_{automaton_name}')()
             automaton_graph = self._analyze_automaton(automaton, name=automaton_name)
             self.automatons_analysis[automaton_graph['name']] = automaton_graph
     
@@ -311,7 +316,7 @@ class App(object):
         return nodes + edges
 
 
-app_logic = App(example_system.get_system())
+app_logic = App(tutorial_system.get_system())
 
 # build dashboard
 app = dash.Dash(__name__,
@@ -322,18 +327,17 @@ app = dash.Dash(__name__,
                     {"name": "viewport", "content": "width=device-width, initial-scale=1"}
                 ])
 app.layout = html.Div([
-    html.Div(id='placeholder', style={'display': 'none'}),
     html.H1('Ariadne Dashboard'),
     html.Div([
         html.H4('Evolver Configurator'),
         html.Div([
             html.Div([
+                html.H6('Automaton selector'),
                 core.Loading(
                     id="loading-automaton",
                     type="default",
                     children=[
                         html.Div([
-                            html.H6('Automaton selector'),
                             core.ConfirmDialog(
                                 id='system-import-not-implemented',
                                 message='This feature is currently not implemented',
@@ -396,14 +400,14 @@ app.layout = html.Div([
                 style={'width': '49%', 'display': 'inline-block'}
             ),
             html.Div([
+                html.H6('Initial Location'),
                 core.Loading(
                     id='loading-evolution',
                     type="default",
                     children=[
                         # initial conditions
                         html.Div(
-                            [html.H6('Initial Location')]
-                            + [
+                            [
                                 core.Dropdown(
                                     id={
                                         'type': 'config-init-automaton-location',
@@ -541,8 +545,7 @@ app.layout = html.Div([
                                 style={
                                     'font-family': 'monospace',
                                     'padding-left': '10pt',
-                                    'padding-right': '10pt',
-                                    # 'padding-bottom': '6pt'
+                                    'padding-right': '10pt'
                                 }
                             )
                         ],
@@ -577,7 +580,7 @@ app.layout = html.Div([
                             id='x-variable',
                             options=[])
                     ],
-                        style={'width': '33%', 'display': 'inline-block'}
+                        style={'width': '29%', 'display': 'inline-block'}
                     ),
                     html.Div([
                         html.H6('Y axis'),
@@ -585,7 +588,7 @@ app.layout = html.Div([
                             id='y-variable',
                             options=[])
                     ],
-                        style={'width': '33%', 'display': 'inline-block'}
+                        style={'width': '29%', 'display': 'inline-block'}
                     ),
                     html.Div([
                         html.H6('Z axis'),
@@ -593,10 +596,24 @@ app.layout = html.Div([
                             id='z-variable',
                             options=[])
                     ],
-                        style={'width': '33%', 'display': 'inline-block'}
+                        style={'width': '29%', 'display': 'inline-block'}
                     ),
+                    core.Checklist(
+                        id='use_mesh-selector',
+                        options=[{'label': '3D Mesh', 'value': 'true'}],
+                        value=[],
+                        labelStyle={'display': 'inline-block'},
+                        style={'width': '10%', 'text-align': 'center'}
+                    )
                 ],
-                    style={'display': 'flex', 'justify-content': 'space-between'}
+                    style={
+                        'display': 'flex',
+                        'flex-direction': 'row',
+                        'place-content': 'space-around',
+                        'justify-content': 'space-between',
+                        'align-content': 'center',
+                        'align-items': 'flex-end'
+                    }
                 ),
                 # time selection
                 html.Div([
@@ -804,29 +821,39 @@ def update_automaton_graph(selected_automaton):
     Input('x-variable', 'value'),
     Input('y-variable', 'value'),
     Input('z-variable', 'value'),
+    Input('use_mesh-selector', 'value'),
     prevent_initial_call=True
 )
-def update_trajectory_plot(selected_time, var_x, var_y, var_z):
-    # TODO do I need to plot 3D meshes or are polylines just fine?
-    # fig = go.Figure(data=[
-    #     go.Mesh3d(x=p['t'], y=p['height'], z=p['aperture'],
-    #               alphahull=0, opacity=0.75, color='cyan')
-    #     for p in orbit_polytopes[:50]])
-    
+def update_trajectory_plot(selected_time, var_x, var_y, var_z, use_mesh):
     if var_x is None or var_y is None:
         raise dash.exceptions.PreventUpdate
     else:
-        filtered_df = app_logic.persistence.polytopes[
-            (selected_time[0] <= app_logic.persistence.polytopes.time) & (app_logic.persistence.polytopes.time <= selected_time[1])]
+        filtered_df = app_logic.persistence.polytopes[(selected_time[0] <= app_logic.persistence.polytopes.time)
+                                                      & (app_logic.persistence.polytopes.time <= selected_time[1])]
         if var_z is None:
             fig = px.line(filtered_df, x=var_x, y=var_y,
                           color="loc", line_group="polytope_id")
         else:
-            fig = px.line_3d(filtered_df, x=var_x, y=var_y, z=var_z,
-                             color="loc", line_group="polytope_id")
+            if not use_mesh:
+                fig = px.line_3d(filtered_df, x=var_x, y=var_y, z=var_z,
+                                 color="loc", line_group="polytope_id")
+            else:
+                # 3D meshes are better when dealing with PDEs, but usually here we deal with ODEs
+                locations = filtered_df['loc'].unique().tolist()
+                colors = {loc: i for loc, i in zip(locations, range(len(locations)))}
+                fig = go.Figure(data=[
+                    go.Mesh3d(x=polytope[var_x], y=polytope[var_y], z=polytope[var_z],
+                              alphahull=0, opacity=0.75, color=colors[polytope['loc'].unique()[0]])  # FIXME color not properly working
+                    for _, polytope in filtered_df.groupby('polytope_id')
+                ])
+    
     fig.update_layout(transition_duration=500)
     return fig
 
 
+def launch(debug=False):
+    app.run_server(debug=debug)
+
+
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    launch(debug=True)

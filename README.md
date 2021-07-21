@@ -1,27 +1,35 @@
 # Ariadne Dashboard
 
-![alt text](https://raw.githubusercontent.com/ilVecc/ariadne_python_plotter/main/images_doc/evolution_3d_plot.png)
+![alt text](doc_imgs/evolution_3d_plot.png)
 
 ## Utility for plotting and interactive visualization of evolutions and automatons of Ariadne systems.
 
-
-
-
 ### Objectives:
-Main purpose of this project is to implement a way to visualize polytopes (hybrid enclosures) and graph automatons produced by python-binded version of [Ariadne](https://github.com/ariadne-cps/ariadne) C++ library. This extension of Ariadne will be implemented employing mainly the libraries:
-- [plotly](https://plotly.com/) - plotting of evolutions
-- [dash](https://dash.plotly.com/) - dashboard interface
-- [dash cytoscape](https://dash.plotly.com/cytoscape) - plot of automatons
+The original purpose of this project was to implement a trajectory (sequence of hybrid enclosures) plotter and an automaton visualizer on top of the Python 
+interface of the [Ariadne](https://github.com/ariadne-cps/ariadne) C++ library.
+In the end, we decided to extend the project to the realization of a dashboard for the whole library; this doesn't mean the dashboard is fully covering 
+every feature of Ariadne. The top level dependencies are simply:
+- [plotly](https://plotly.com/) - interactive 2D/3D plotting of the trajectories
+- [dash](https://dash.plotly.com/) - main dashboard interface
+- [dash cytoscape](https://dash.plotly.com/cytoscape) - interactive plot of the automatons
 
-A serialization tool in [YAML](https://yaml.org/) will also be included. This will permit to export results in a more general way.
-At the moment since there are some incompatibilities with MacOS users, this feature is not included yet.
+In order to save the results, a [YAML](https://yaml.org/) exporter was also on the schedule but at the moment, since there are some incompatibilities with 
+MacOS users, this feature is not included yet.
+
 
 ### Installation guide:
 - Install [Ariadne](https://www.ariadne-cps.org/installation/) (pyariadne included)
-- clone this repo and run:
+- Clone this repo and install the Python requirements with
 ```
 python -m pip install -r requirements.txt
 ```
+- Run Ariadne Dashboard with
+```
+python app_launcher.py
+```
+An additional `-d` will launch the dashboard in debug mode.
+
+
 
 ## Project for Discrete Hybrid Systems exam @ University of Verona
 
