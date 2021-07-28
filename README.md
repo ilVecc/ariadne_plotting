@@ -30,6 +30,11 @@ python app_launcher.py
 An additional `-d` will launch the dashboard in debug mode.
 
 
+### APIs
+The dashboard completely relies on minimal APIs in order to transform the system and the orbits to more Python-friendly data structures. We provide two simple 
+examples of the workflow in the `trajectory_plotter.py` and `automaton_plotter.py` files. 
+
+
 
 ## Project for Discrete Hybrid Systems exam @ University of Verona
 

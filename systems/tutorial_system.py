@@ -164,8 +164,7 @@ def create_evolver(system):
 
 def compute_evolution(evolver, initial_set, final_time):
     # Compute the evolution flow tube using upper semantics
-    orbit = evolver.orbit(initial_set, HybridTerminationCriterion(final_time), Semantics.UPPER)
-    return orbit
+    return evolver.orbit(initial_set, HybridTerminationCriterion(final_time), Semantics.UPPER)
 
 
 def create_analyser(evolver):
