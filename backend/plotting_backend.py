@@ -8,8 +8,6 @@ import plotly.express as px
 import plotly.graph_objs as go
 import pyariadne as ari
 
-from systems import tutorial_system
-
 
 def plot_trajectory(polytopes_df, var_x, var_y, var_z=None, use_mesh=False):
     """

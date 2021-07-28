@@ -197,7 +197,7 @@ if __name__ == '__main__':
     aperture = RealVariable("aperture")
     height = RealVariable("height")
     time = TimeVariable()
-
+    
     '''
     evoluzione classica a tempo continuo [puntuale] (integratore con metodo Runge-Kutta)
     '''
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     plot("plots/simulation/simulation_t-aperture", Axes2d(0, TimeVariable(), 30, -0.1, aperture, 1.1), orbit)
     plot("plots/simulation/simulation_height-aperture", Axes2d(5, height, 9, -0.1, aperture, 1.1), orbit)
     print("Done computing and plotting simulation trajectory..")
-
+    
     '''
     evoluzione classica a tempo continuo con incertezza [insiemistico; in pratica abbiamo più traiettorie (per questo le aree arancioni nel plot)]
     '''
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     plot("plots/finite/finite_evolution_t-aperture", Axes2d(0, time, 30, -0.1, aperture, 1.1), orbit)
     plot("plots/finite/finite_evolution_height-aperture", Axes2d(5, height, 9, -0.1, aperture, 1.1), orbit)
     print("Done computing and plotting evolution flow tube!\n")
-
+    
     '''
     come per l'evolver, ma si discretizza periodicamente sulla griglia dei possibili stati, così possiamo scalare facilmente (qui abbiamo i rettangoli) non
     credo di aver capito bene il perché, ma il tempo non è più disponibile a causa dell'utilizzo della griglia (quindi ci fermiamo alla 5a location) qui
